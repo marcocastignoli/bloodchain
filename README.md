@@ -1,4 +1,4 @@
-# Bloodychain
+# Bloodchain
 Welcome to Bloodchain, this is a - totally not for production - blockchain.
 It was Halloween 2019 and I was bored so I decided to learn how blockchains work!
 
