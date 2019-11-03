@@ -64,7 +64,6 @@ class BloodyNode {
     }
   }
   blockAlreadyExists(block) {
-    console.log(this.blocks.find(b => hash(b.transactions) === hash(block.transactions)))
     return this.blocks.find(b => hash(b.transactions) === hash(block.transactions)) ? true : false
   }
   async addTransactionToTmpBlock(transactionMessage) {
