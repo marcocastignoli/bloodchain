@@ -134,6 +134,7 @@ class BloodyNode {
   }
   async sendTransaction(transaction) {
     transaction.fromAddress = (await this.ipfs.id()).id
+    transaction.timestamp = Date.now()
     if (!this.verifyTransaction(transaction.fromAddress, transaction)) {
       return false
     }
