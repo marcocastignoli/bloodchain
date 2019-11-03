@@ -28,10 +28,6 @@ class BloodyNode {
       const prefix = Buffer.from(previusBlock.hash.toString() + JSON.stringify(block), 'hex');
       const nonce = solver.solve(17, prefix);
       block.hash = nonce
-      //this.blocks.push(block)
-      const selfRSA = new NodeRSA(this.key.private)
-      const message = selfRSA.encryptPrivate(JSON.stringify(block), 'base64')
-      await this.ipfs.pubsub.publish(BloodyNode.TOPIC_BLOCKS, message)
       return block
     } else {
       return false
@@ -66,6 +62,9 @@ class BloodyNode {
       return false
     }
   }
+  blockAlreadyExists(block) {
+    return this.blocks.find(b => b.hash === block.hash) ? true : false
+  }
   async addTransactionToTmpBlock(transactionMessage) {
     let transaction = JSON.parse(await this.decrypt(transactionMessage))
     if (transaction) {
@@ -74,7 +73,12 @@ class BloodyNode {
       }
     }
     if (this.tmpBlock.transactions.length === BloodyNode.BLOCK_SIZE) {
-      await this.mineBlock(this.tmpBlock)
+      const block = await this.mineBlock(this.tmpBlock)
+      if (!this.blockAlreadyExists(block)) {
+        const selfRSA = new NodeRSA(this.key.private)
+        const message = selfRSA.encryptPrivate(JSON.stringify(block), 'base64')
+        await this.ipfs.pubsub.publish(BloodyNode.TOPIC_BLOCKS, message)
+      }
       this.tmpBlock = { transactions: [] }
     }
   }
