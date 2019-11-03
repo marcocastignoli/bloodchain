@@ -64,6 +64,7 @@ class BloodyNode {
     }
   }
   blockAlreadyExists(block) {
+    console.log(this.blocks.find(b => hash(b.transactions) === hash(block.transactions)))
     return this.blocks.find(b => hash(b.transactions) === hash(block.transactions)) ? true : false
   }
   async addTransactionToTmpBlock(transactionMessage) {
@@ -86,7 +87,7 @@ class BloodyNode {
   async addTransaction(transactionMessage) {
     this.transactions.push(transactionMessage)
     if (this.tmpBlock.transactions.length < BloodyNode.BLOCK_SIZE) {
-      this.addTransactionToTmpBlock(this.transactions[0])
+      this.addTransactionToTmpBlock(this.transactions.shift())
     }
   }
   async verifyBlock(blockMessage) {
@@ -116,7 +117,10 @@ class BloodyNode {
     }
   }
   history() {
-    return this.blocks
+    return this.blocks/* .map(b => {
+      b.hash = Buffer.from(b.hash).toString('hex')
+      return b
+    }) */
   }
   balance(address) {
     let balance = 0
