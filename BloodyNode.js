@@ -103,7 +103,9 @@ class BloodyNode {
         prefix: prefix
       });
       if (verifier.check(block.hash)) {
-        this.blocks.push(block)
+        if (!this.blockAlreadyExists(block)) {
+          this.blocks.push(block)
+        }
         return true
       } else {
         return false
