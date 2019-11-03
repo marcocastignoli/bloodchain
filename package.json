@@ -9,10 +9,11 @@
     "express": "^4.17.1",
     "ipfs": "^0.39.0",
     "node-rsa": "^1.0.6",
+    "object-hash": "^2.0.0",
     "proof-of-work": "^3.3.2"
   },
   "scripts": {
     "start": "node index.js",
-    "gen-key" : "node rsa.js"
+    "gen-key": "node rsa.js"
   }
 }

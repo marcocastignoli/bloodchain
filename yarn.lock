@@ -4373,6 +4373,11 @@ object-component@0.0.3:
   resolved "https://registry.yarnpkg.com/object-component/-/object-component-0.0.3.tgz#f0c69aa50efc95b866c186f400a33769cb2f1291"
   integrity sha1-8MaapQ78lbhmwYb0AKM3acsvEpE=
 
+object-hash@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/object-hash/-/object-hash-2.0.0.tgz#7c4cc341eb8b53367312a7c546142f00c9e0ea20"
+  integrity sha512-I7zGBH0rDKwVGeGZpZoFaDhIwvJa3l1CZE+8VchylXbInNiCj7sxxea9P5dTM4ftKR5//nrqxrdeGSTWL2VpBA==
+
 object-inspect@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/object-inspect/-/object-inspect-1.6.0.tgz#c70b6cbf72f274aab4c34c0c82f5167bf82cf15b"
@@ -4599,7 +4604,7 @@ peer-book@^0.9.1:
     peer-id "~0.12.2"
     peer-info "~0.15.1"
 
-peer-id@^0.12.2, peer-id@^0.12.5, peer-id@~0.12.2, peer-id@~0.12.3:
+peer-id@^0.12.2, peer-id@~0.12.2, peer-id@~0.12.3:
   version "0.12.5"
   resolved "https://registry.yarnpkg.com/peer-id/-/peer-id-0.12.5.tgz#b22a1edc5b4aaaa2bb830b265ba69429823e5179"
   integrity sha512-3xVWrtIvNm9/OPzaQBgXDrfWNx63AftgFQkvqO6YSZy7sP3Fuadwwbn54F/VO9AnpyW/26i0WRQz9FScivXrmw==
