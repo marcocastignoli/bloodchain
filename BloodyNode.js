@@ -116,10 +116,11 @@ class BloodyNode {
     }
   }
   history() {
-    return this.blocks/* .map(b => {
-      b.hash = Buffer.from(b.hash).toString('hex')
-      return b
-    }) */
+    return this.blocks.map(b => {
+      const tmpBlock = Object.assign({}, b)
+      tmpBlock.hash = Buffer.from(b.hash).toString('hex')
+      return tmpBlock
+    })
   }
   balance(address) {
     let balance = 0
