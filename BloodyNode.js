@@ -1,5 +1,6 @@
 const NodeRSA = require('node-rsa');
 const pow = require('proof-of-work');
+const hash = require('object-hash');
 const solver = new pow.Solver();
 
 class BloodyNode {
@@ -63,7 +64,7 @@ class BloodyNode {
     }
   }
   blockAlreadyExists(block) {
-    return this.blocks.find(b => b.hash === block.hash) ? true : false
+    return this.blocks.find(b => hash(b.transactions) === hash(block.transactions)) ? true : false
   }
   async addTransactionToTmpBlock(transactionMessage) {
     let transaction = JSON.parse(await this.decrypt(transactionMessage))
