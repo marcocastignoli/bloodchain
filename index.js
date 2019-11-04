@@ -17,11 +17,32 @@ async function init(app) {
   const ipfs = await IPFS.create({
     silent: true,
     EXPERIMENTAL: { ipnsPubsub: true },
-    repo: './ipfs'
+    repo: './ipfs',
+    relay: {
+      enabled: true
+    },
+    config: {
+      "Addresses": {
+        "Swarm": [
+          '/ip4/51.75.30.53/tcp/4004/ws/ipfs/QmUeLcCfeR33xGcR8DBta2gG8EcfZ9UygLxLdaXMYQMzFA'
+        ],
+        "API": "",
+        "Gateway": ""
+      },
+      "Discovery": {
+        "MDNS": {
+          "Enabled": false,
+          "Interval": 10
+        },
+        "webRTCStar": {
+          "Enabled": true
+        }
+      }
+    }
   })
   process.stdout.write("OK\n");
 
-
+  
   // TODO: now I'm generating the basic blockchain every time
   process.stdout.write("Making you rich... ");
   const ipfs_id = (await ipfs.id()).id
