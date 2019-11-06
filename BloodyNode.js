@@ -1,21 +1,22 @@
 const NodeRSA = require('node-rsa');
 const pow = require('proof-of-work');
 const hash = require('object-hash');
+const crypto = require('libp2p-crypto')
 const solver = new pow.Solver();
 
 class BloodyNode {
-  constructor({ key, ipfs, blocks }) {
-    if (!key || !key.private || !key.public) {
-      throw 'No key'
-    }
+  constructor({ ipfs, blocks, initPrivateKey }) {
     if (!ipfs) {
       throw 'No IPFS'
     }
     if (!blocks) {
       throw 'No blocks'
     }
-    this.key = key
+    this.key = {
+      private: initPrivateKey
+    }
     this.ipfs = ipfs
+    this.peers = {}
     this.transactions = []
     this.tmpBlock = {
       transactions: []
@@ -34,21 +35,21 @@ class BloodyNode {
       return false
     }
   }
+  async encrypt(data) {
+    const key = new NodeRSA(this.key.private, "pkcs1-private")
+    return key.encryptPrivate(data, 'base64')
+  }
   async decrypt(message) {
-    let encrypted
-    try {
-      encrypted = message.data.toString()
-    } catch (e) { }
-    const name = await this.ipfs.name.resolve(message.from)
-    const file = await this.ipfs.cat(name)
-    const peerPublicKey = file.toString('utf8')
-    const peerRSA = new NodeRSA()
-    try {
-      peerRSA.importKey(peerPublicKey)
-      return peerRSA.decryptPublic(encrypted, 'utf8')
-    } catch {
-      return false
+    const publicKeyString = this.peers[message.from]
+    let publicKey = crypto.keys.unmarshalPublicKey(Buffer.from(publicKeyString, 'base64'))
+    publicKey = {
+      n: Buffer.from(publicKey._key.n, 'base64'),
+      e: Buffer.from(publicKey._key.e, 'base64'),
     }
+    let usefulPubKey = new NodeRSA()
+    usefulPubKey.importKey(publicKey, 'components-public')
+    const encrypted = message.data.toString()
+    return usefulPubKey.decryptPublic(encrypted, 'utf8')
   }
   verifyTransaction(fromAddress, transaction) {
     if (fromAddress !== transaction.fromAddress) {
@@ -76,8 +77,7 @@ class BloodyNode {
     if (this.tmpBlock.transactions.length === BloodyNode.BLOCK_SIZE) {
       const block = await this.mineBlock(this.tmpBlock)
       if (!this.blockAlreadyExists(block)) {
-        const selfRSA = new NodeRSA(this.key.private)
-        const message = selfRSA.encryptPrivate(JSON.stringify(block), 'base64')
+        const message = await this.encrypt(JSON.stringify(block))
         await this.ipfs.pubsub.publish(BloodyNode.TOPIC_BLOCKS, message)
       }
       this.tmpBlock = { transactions: [] }
@@ -142,23 +142,27 @@ class BloodyNode {
     if (!this.verifyTransaction(transaction.fromAddress, transaction)) {
       return false
     }
-    const selfRSA = new NodeRSA(this.key.private)
-    const message = selfRSA.encryptPrivate(JSON.stringify(transaction), 'base64')
+    const message = await this.encrypt(JSON.stringify(transaction))
     await this.ipfs.pubsub.publish(BloodyNode.TOPIC_TRANSACTIONS, message)
     return true
   }
   async start() {
-    const file = await this.ipfs.add(Buffer.from(this.key.public))
-    await this.ipfs.name.publish(file[0].hash)
     await this.ipfs.pubsub.subscribe(BloodyNode.TOPIC_TRANSACTIONS, this.addTransaction.bind(this))
     await this.ipfs.pubsub.subscribe(BloodyNode.TOPIC_BLOCKS, this.verifyBlock.bind(this))
+    this.peers[(await this.ipfs.id()).id] = (await this.ipfs.id()).publicKey
+    this.ipfs.libp2p.on('peer:connect', peerInfo => {
+      const pubKey = peerInfo.id.marshalPubKey()
+      if (pubKey) {
+        this.peers[peerInfo.id._idB58String] = pubKey.toString('base64')
+      }
+    })
     return true
   }
-  static async create({ key, ipfs, blocks }) {
+  static async create({ ipfs, blocks, initPrivateKey }) {
     const node = new BloodyNode({
       ipfs: ipfs,
-      key: key,
-      blocks: blocks
+      blocks: blocks,
+      initPrivateKey
     })
     await node.start()
     return node

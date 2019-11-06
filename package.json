@@ -8,6 +8,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "ipfs": "^0.39.0",
+    "libp2p-crypto": "^0.17.1",
     "node-rsa": "^1.0.6",
     "object-hash": "^2.0.0",
     "proof-of-work": "^3.3.2"
