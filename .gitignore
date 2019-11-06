@@ -1,4 +1,5 @@
 ipfs
 node_modules
 private_key
-public_key
+.env
+blockchain

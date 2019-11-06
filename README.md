@@ -18,12 +18,26 @@ Install with npm or Yarn
 yarn Install
 ```
 
-Generate public and private key
+Generate private key, it outputs your ipfs id
 ```
 yarn gen-key
+```
+
+```
+mv .env.example .env
+```
+and edit it!
+
+If you are not using an existing blockchain you have to generate it.
+Before that set GENESIS_BLOCK_PEER=your_ipfs_id (output of yarn key-gen)
+
+```
+yarn gen-blocks
 ```
 
 ## Start
 ```
 yarn start
 ```
+
+If you regenerate your key remember to remove the ipfs folder

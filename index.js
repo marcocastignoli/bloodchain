@@ -1,6 +1,8 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 const BloodyNode = require('./BloodyNode.js')
 const NodeRSA = require('node-rsa');
-const sha256 = require('sha256')
 const IPFS = require('ipfs')
 const crypto = require('libp2p-crypto')
 const PeerId = require('peer-id')
@@ -27,9 +29,7 @@ function createFromPrivKey(privateKey) {
 }
 
 async function init(app) {
-  const key = new NodeRSA({ b: 2048 });
-  const initPrivateKey = key.exportKey('private')
-  const initPubKey = key.exportKey('public')
+  const initPrivateKey = fs.readFileSync('./private_key')
   const privateKey = await crypto.keys.import(Buffer.from(initPrivateKey), null)
   const peerID = await createFromPrivKey(privateKey)
   const peerJSON = peerID.toJSON()
@@ -45,8 +45,8 @@ async function init(app) {
     config: {
       Addresses: {
         Swarm: [
-          "/ip4/0.0.0.0/tcp/4001",
-          "/ip6/::/tcp/4001"
+          `/ip4/0.0.0.0/tcp/${process.env.IPFS_PORT}`,
+          `/ip6/::/tcp/${process.env.IPFS_PORT}`
         ],
       },
     }
@@ -80,24 +80,25 @@ async function init(app) {
 
 
   process.stdout.write("Making you rich... ");
-  
-  let blocks = []
-  let genesisBlock = {
-    transactions: [
-      { fromAddress: '1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333', toAddress: peerId, amount: 1000, fee: 0 },
-      { fromAddress: peerId, toAddress: '1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333', amount: 900, fee: 0 },
-    ]
-  }
-  let hash = ''
-  const difficulty = 3
-  let nonce = 0
-  while (hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
-    nonce++
-    hash = sha256(nonce + JSON.stringify(genesisBlock)).toString()
-  }
-  genesisBlock.hash = hash
-  genesisBlock.nonce = nonce
-  blocks.push(genesisBlock)
+
+  /*   let blocks = []
+    let genesisBlock = {
+      transactions: [
+        { fromAddress: '1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333', toAddress: peerId, amount: 1000, fee: 0 },
+        { fromAddress: peerId, toAddress: '1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333', amount: 900, fee: 0 },
+      ]
+    }
+    let hash = ''
+    const difficulty = 3
+    let nonce = 0
+    while (hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
+      nonce++
+      hash = sha256(nonce + JSON.stringify(genesisBlock)).toString()
+    }
+    genesisBlock.hash = hash
+    genesisBlock.nonce = nonce
+    blocks.push(genesisBlock) */
+  let blocks = JSON.parse(fs.readFileSync('./blockchain'))
   process.stdout.write("OK\n");
 
   //const blocks = [{"transactions":[{"fromAddress":"1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333","toAddress":"QmVe3zDyfmNRUDMR3eg9BQJk88RhosxKgwKWDSxH67Tjdd","amount":1000,"fee":0},{"fromAddress":"QmVe3zDyfmNRUDMR3eg9BQJk88RhosxKgwKWDSxH67Tjdd","toAddress":"1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333","amount":900,"fee":0}],"hash":{"type":"Buffer","data":[0,0,1,110,54,223,196,71,60,148,207,97,72,144,42,18]}}]
@@ -106,8 +107,7 @@ async function init(app) {
   const node = await BloodyNode.create({
     ipfs: ipfs,
     blocks: blocks,
-    initPrivateKey,
-    initPubKey
+    initPrivateKey
   })
   process.stdout.write("OK\n");
 
@@ -139,8 +139,8 @@ async function init(app) {
     const balance = node.balance((await node.ipfs.id()).id)
     return res.send(JSON.stringify(balance))
   })
-  app.listen(8888)
-  process.stdout.write(`\nWallet API available at http://localhost:8888\n\nYour public hash is: ${(await ipfs.id()).id}\n`);
+  app.listen(process.env.HTTP_PORT)
+  process.stdout.write(`\nWallet API available at http://localhost:${process.env.HTTP_PORT}\n\nYour public hash is: ${(await ipfs.id()).id}\n`);
 }
 
 console.log(`
@@ -159,13 +159,13 @@ Welcome to Bloodchain, this is a - totally not for production - blockchain.
 It was Halloween 2019 and I was bored so I decided to learn how blockchains work!
 
 Send a transaction: 
-curl -X POST  http://localhost:8888/transaction
+curl -X POST  http://localhost:${process.env.HTTP_PORT}/transaction
 
 Check your balance:
-curl -X GET  http://localhost:8888/balance
+curl -X GET  http://localhost:${process.env.HTTP_PORT}/balance
 
 Check bloodychain's history:
-curl -X GET  http://localhost:8888/history
+curl -X GET  http://localhost:${process.env.HTTP_PORT}/history
 
 `)
 init(app)
