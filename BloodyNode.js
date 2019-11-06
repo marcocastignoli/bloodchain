@@ -41,15 +41,19 @@ class BloodyNode {
   }
   async decrypt(message) {
     const publicKeyString = this.peers[message.from]
-    let publicKey = crypto.keys.unmarshalPublicKey(Buffer.from(publicKeyString, 'base64'))
-    publicKey = {
-      n: Buffer.from(publicKey._key.n, 'base64'),
-      e: Buffer.from(publicKey._key.e, 'base64'),
+    if (publicKeyString) {
+      let publicKey = crypto.keys.unmarshalPublicKey(Buffer.from(publicKeyString, 'base64'))
+      publicKey = {
+        n: Buffer.from(publicKey._key.n, 'base64'),
+        e: Buffer.from(publicKey._key.e, 'base64'),
+      }
+      let usefulPubKey = new NodeRSA()
+      usefulPubKey.importKey(publicKey, 'components-public')
+      const encrypted = message.data.toString()
+      return usefulPubKey.decryptPublic(encrypted, 'utf8')
+    } else {
+      return false
     }
-    let usefulPubKey = new NodeRSA()
-    usefulPubKey.importKey(publicKey, 'components-public')
-    const encrypted = message.data.toString()
-    return usefulPubKey.decryptPublic(encrypted, 'utf8')
   }
   verifyTransaction(fromAddress, transaction) {
     if (fromAddress !== transaction.fromAddress) {
@@ -90,24 +94,29 @@ class BloodyNode {
     }
   }
   async verifyBlock(blockMessage) {
-    const block = JSON.parse(await this.decrypt(blockMessage))
-    block.hash = Buffer.from(block.hash)
-    const previusBlock = this.blocks[this.blocks.length - 1] ? this.blocks[this.blocks.length - 1] : false
-    if (previusBlock) {
-      const blockClone = Object.assign({}, block);
-      delete blockClone.hash;
-      const prefix = Buffer.from(previusBlock.hash.toString() + JSON.stringify(blockClone), 'hex');
-      const verifier = new pow.Verifier({
-        size: 1024,
-        n: 16,
-        complexity: 17,
-        prefix: prefix
-      });
-      if (verifier.check(block.hash)) {
-        if (!this.blockAlreadyExists(block)) {
-          this.blocks.push(block)
+    const decrypted = await this.decrypt(blockMessage)
+    if (decrypted) {
+      const block = JSON.parse(decrypted)
+      block.hash = Buffer.from(block.hash)
+      const previusBlock = this.blocks[this.blocks.length - 1] ? this.blocks[this.blocks.length - 1] : false
+      if (previusBlock) {
+        const blockClone = Object.assign({}, block);
+        delete blockClone.hash;
+        const prefix = Buffer.from(previusBlock.hash.toString() + JSON.stringify(blockClone), 'hex');
+        const verifier = new pow.Verifier({
+          size: 1024,
+          n: 16,
+          complexity: 17,
+          prefix: prefix
+        });
+        if (verifier.check(block.hash)) {
+          if (!this.blockAlreadyExists(block)) {
+            this.blocks.push(block)
+          }
+          return true
+        } else {
+          return false
         }
-        return true
       } else {
         return false
       }

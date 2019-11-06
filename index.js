@@ -42,7 +42,15 @@ async function init(app) {
     },
     EXPERIMENTAL: { ipnsPubsub: true },
     repo: './ipfs',
-    relay: {
+    config: {
+      Addresses: {
+           Swarm: [
+               "/ip4/0.0.0.0/tcp/4001",
+               "/ip6/::/tcp/4001"
+           ],
+      },
+  }
+    /* relay: {
       enabled: true
     },
     config: {
@@ -53,8 +61,16 @@ async function init(app) {
         "API": "",
         "Gateway": ""
       },
-      "Discovery": {}
-    }
+      "Discovery": {
+        "MDNS": {
+          "Enabled": false,
+          "Interval": 10
+        },
+        "webRTCStar": {
+          "Enabled": true
+        }
+      }
+    } */
   })
   process.stdout.write("OK\n");
 
