@@ -1,8 +1,7 @@
 const NodeRSA = require('node-rsa');
-const pow = require('proof-of-work');
 const hash = require('object-hash');
 const crypto = require('libp2p-crypto')
-const solver = new pow.Solver();
+const sha256 = require('sha256')
 
 class BloodyNode {
   constructor({ ipfs, blocks, initPrivateKey }) {
@@ -24,15 +23,19 @@ class BloodyNode {
     this.blocks = blocks
   }
   async mineBlock(block) {
-    // cancel if someone has found the hash before or it is taking too long
-    const previusBlock = this.blocks[this.blocks.length - 1] ? this.blocks[this.blocks.length - 1] : false
-    if (previusBlock) {
-      const prefix = Buffer.from(previusBlock.hash.toString() + JSON.stringify(block), 'hex');
-      const nonce = solver.solve(17, prefix);
-      block.hash = nonce
+    const previousBlock = this.blocks[this.blocks.length - 1] ? this.blocks[this.blocks.length - 1] : false
+    if (previousBlock) {
+      let hash = ''
+      const difficulty = 3
+      let nonce = 0
+      while (hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
+        nonce++
+        hash = sha256(nonce + previousBlock.hash + JSON.stringify(block)).toString()
+      }
+      block.hash = hash
+      block.nonce = nonce
+      block.previousHash = previousBlock.hash
       return block
-    } else {
-      return false
     }
   }
   async encrypt(data) {
@@ -97,19 +100,14 @@ class BloodyNode {
     const decrypted = await this.decrypt(blockMessage)
     if (decrypted) {
       const block = JSON.parse(decrypted)
-      block.hash = Buffer.from(block.hash)
-      const previusBlock = this.blocks[this.blocks.length - 1] ? this.blocks[this.blocks.length - 1] : false
-      if (previusBlock) {
+      const previousBlock = this.blocks[this.blocks.length - 1] ? this.blocks[this.blocks.length - 1] : false
+      if (previousBlock) {
         const blockClone = Object.assign({}, block);
         delete blockClone.hash;
-        const prefix = Buffer.from(previusBlock.hash.toString() + JSON.stringify(blockClone), 'hex');
-        const verifier = new pow.Verifier({
-          size: 1024,
-          n: 16,
-          complexity: 17,
-          prefix: prefix
-        });
-        if (verifier.check(block.hash)) {
+        delete blockClone.nonce;
+        delete blockClone.previousHash;
+        
+        if (sha256(block.nonce + previousBlock.hash + JSON.stringify(blockClone)).toString() === block.hash) {
           if (!this.blockAlreadyExists(block)) {
             this.blocks.push(block)
           }
@@ -127,7 +125,7 @@ class BloodyNode {
   history() {
     return this.blocks.map(b => {
       const tmpBlock = Object.assign({}, b)
-      tmpBlock.hash = Buffer.from(b.hash).toString('hex')
+      tmpBlock.hash = Buffer.from(b.hash).toString()
       return tmpBlock
     })
   }

@@ -1,6 +1,6 @@
 const BloodyNode = require('./BloodyNode.js')
 const NodeRSA = require('node-rsa');
-const pow = require('proof-of-work');
+const sha256 = require('sha256')
 const IPFS = require('ipfs')
 const crypto = require('libp2p-crypto')
 const PeerId = require('peer-id')
@@ -14,10 +14,10 @@ const app = express()
 app.use(bodyParser.json());
 app.use(cors())
 
-function createFromPrivKey(privateKey){
+function createFromPrivKey(privateKey) {
   return new Promise(resolve => {
     PeerId.createFromPrivKey(crypto.keys.marshalPrivateKey(privateKey, 'rsa'), async (e, peerId) => {
-      if(e) {
+      if (e) {
         console.log(err)
         return resolve(false)
       }
@@ -27,7 +27,7 @@ function createFromPrivKey(privateKey){
 }
 
 async function init(app) {
-  const key = new NodeRSA({b: 2048});
+  const key = new NodeRSA({ b: 2048 });
   const initPrivateKey = key.exportKey('private')
   const initPubKey = key.exportKey('public')
   const privateKey = await crypto.keys.import(Buffer.from(initPrivateKey), null)
@@ -38,18 +38,18 @@ async function init(app) {
   const ipfs = await IPFS.create({
     silent: false,
     init: {
-        privateKey: peerJSON.privKey,
+      privateKey: peerJSON.privKey,
     },
     EXPERIMENTAL: { ipnsPubsub: true },
     repo: './ipfs',
     config: {
       Addresses: {
-           Swarm: [
-               "/ip4/0.0.0.0/tcp/4001",
-               "/ip6/::/tcp/4001"
-           ],
+        Swarm: [
+          "/ip4/0.0.0.0/tcp/4001",
+          "/ip6/::/tcp/4001"
+        ],
       },
-  }
+    }
     /* relay: {
       enabled: true
     },
@@ -77,11 +77,10 @@ async function init(app) {
 
   const peerId = (await ipfs.id()).id
   // TODO: now I'm generating the basic blockchain every time
-  
 
-process.stdout.write("Making you rich... ");
-const ipfs_id = (await ipfs.id()).id
-  const solver = new pow.Solver();
+
+  process.stdout.write("Making you rich... ");
+  
   let blocks = []
   let genesisBlock = {
     transactions: [
@@ -89,14 +88,20 @@ const ipfs_id = (await ipfs.id()).id
       { fromAddress: peerId, toAddress: '1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333', amount: 900, fee: 0 },
     ]
   }
-  const prefix = Buffer.from(JSON.stringify(genesisBlock), 'hex');
-  const nonce = solver.solve(17, prefix);
-  genesisBlock.hash = nonce
+  let hash = ''
+  const difficulty = 3
+  let nonce = 0
+  while (hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
+    nonce++
+    hash = sha256(nonce + JSON.stringify(genesisBlock)).toString()
+  }
+  genesisBlock.hash = hash
+  genesisBlock.nonce = nonce
   blocks.push(genesisBlock)
   process.stdout.write("OK\n");
-  
+
   //const blocks = [{"transactions":[{"fromAddress":"1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333","toAddress":"QmVe3zDyfmNRUDMR3eg9BQJk88RhosxKgwKWDSxH67Tjdd","amount":1000,"fee":0},{"fromAddress":"QmVe3zDyfmNRUDMR3eg9BQJk88RhosxKgwKWDSxH67Tjdd","toAddress":"1h3h12ui3h1i2u3h1iu2hi12ui3h1ui23hi1u2h3iu1h23333","amount":900,"fee":0}],"hash":{"type":"Buffer","data":[0,0,1,110,54,223,196,71,60,148,207,97,72,144,42,18]}}]
-  
+
   process.stdout.write("Initializing the node... ");
   const node = await BloodyNode.create({
     ipfs: ipfs,
@@ -135,7 +140,7 @@ const ipfs_id = (await ipfs.id()).id
     return res.send(JSON.stringify(balance))
   })
   app.listen(8888)
-  process.stdout.write(`\nWallet API available at http://localhost:8888\n\nYour public hash is: ${(await ipfs.id()).id}`);
+  process.stdout.write(`\nWallet API available at http://localhost:8888\n\nYour public hash is: ${(await ipfs.id()).id}\n`);
 }
 
 console.log(`
