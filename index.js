@@ -117,14 +117,15 @@ Welcome to Bloodchain, this is a - totally not for production - blockchain.
 It was Halloween 2019 and I was bored so I decided to learn how blockchains work!
 
 Send a transaction: 
-curl -X POST  http://localhost:${process.env.HTTP_PORT}/transaction
+curl -X POST  http://localhost:${process.env.HTTP_PORT}/transaction \\
+  -H 'Content-Type: application/json' \\
+  -d '{ "recipient": "QmPWkzVYGtgqnLiFVKveGt3MWBbkkrPdYN8VgJibCe9ja6", "amount": 20 }'  
 
 Check your balance:
 curl -X GET  http://localhost:${process.env.HTTP_PORT}/balance
 
 Check bloodychain's history:
 curl -X GET  http://localhost:${process.env.HTTP_PORT}/history
-
 `)
 init(app)
 
