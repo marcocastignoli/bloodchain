@@ -84,6 +84,10 @@ class BloodyNode {
     if (this.tmpBlock.transactions.length === BloodyNode.BLOCK_SIZE) {
       const block = await this.mineBlock(this.tmpBlock)
       if (!this.blockAlreadyExists(block)) {
+        let tmpBlocks = this.blocks.slice(0)
+        tmpBlocks.push(block)
+        const file = await this.ipfs.add(JSON.stringify(tmpBlocks))
+        block.url = file[0].hash
         const message = await this.encrypt(JSON.stringify(block))
         await this.ipfs.pubsub.publish(BloodyNode.TOPIC_BLOCKS, message)
       }
@@ -106,6 +110,7 @@ class BloodyNode {
         delete blockClone.hash;
         delete blockClone.nonce;
         delete blockClone.previousHash;
+        delete blockClone.url;
         
         if (sha256(block.nonce + previousBlock.hash + JSON.stringify(blockClone)).toString() === block.hash) {
           if (!this.blockAlreadyExists(block)) {
